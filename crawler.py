@@ -5,13 +5,17 @@ import sys
 import re
 import requests
 
-baseurl = 'http://hzdaily.hangzhou.com.cn/hzrb/'
+basePattern = {
+  'hzrb':'http://hzdaily.hangzhou.com.cn/hzrb/',
+  'dskb':'http://hzdaily.hangzhou.com.cn/dskb/',
+  'mrsb':'http://hzdaily.hangzhou.com.cn/mrsb'
+}
 
 def getPageList( day ):
-  url = '{}{:%Y/%m/%d/page_list_%Y%m%d.html}'.format(baseurl,day)
+  url = '{}{:%Y/%m/%d/page_list_%Y%m%d.html}'.format(base['hzrb'],day)
   resp = requests.get(url)
-  return resp.text
-#  return re.match( r'href=\"(.+)\"', resp.text ).groups;
+  resp.encoding = 'utf-8'
+  return re.findall( r'href="(.+)"', resp.text, re.MULTILINE )
   
 if len(sys.argv)==1 :
   day = date.today()
