@@ -6,16 +6,17 @@ import re
 import requests
 
 basePattern = {
-  'hzrb':'http://hzdaily.hangzhou.com.cn/hzrb/',
-  'dskb':'http://hzdaily.hangzhou.com.cn/dskb/',
-  'mrsb':'http://hzdaily.hangzhou.com.cn/mrsb'
+  'hzrb':'http://hzdaily.hangzhou.com.cn/hzrb/{:%Y/%m/%d/page_list_%Y%m%d}.html',
+  'dskb':'http://hzdaily.hangzhou.com.cn/dskb/{:%Y/%m/%d/page_list_%Y%m%d}.html',
+  'mrsb':'http://hzdaily.hangzhou.com.cn/mrsb/{:%Y/%m/%d/page_list_%Y%m%d}.html'
 }
 
 def getPageList( day ):
-  url = '{}{:%Y/%m/%d/page_list_%Y%m%d.html}'.format(base['hzrb'],day)
+  url = basePattern['hzrb'].format(day)
+  print( url )
   resp = requests.get(url)
   resp.encoding = 'utf-8'
-  return re.findall( r'href="(.+)"', resp.text, re.MULTILINE )
+  return re.findall( r'href="(http[^"]+\.pdf)".+href="([^"]+\.html)".+>(第[^<>]+)<', resp.text, re.MULTILINE )
   
 if len(sys.argv)==1 :
   day = date.today()
