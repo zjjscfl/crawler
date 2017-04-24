@@ -6,8 +6,16 @@ import os
 import re
 import requests
 
+dictCode = {
+  'hzrb': {
+    'name': '杭州日报',
+    'pattern': 'http://hzdaily.hangzhou.com.cn/hzrb/{:%Y/%m/%d/page_list_%Y%m%d}.html',
+    'WH' : '644*1024'
+  }
+}
+
 def getPageList( day, code ):
-  url = 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d/page_list_%Y%m%d}.html'.format(code, day)
+  url = dictCode[code]['pattern'].format(day)
   resp = requests.get(url)
   resp.encoding = 'utf-8'
   return re.findall( r'href="(http[^"]+\.pdf)".+href="([^"]+\.html)".+>第([^<>]+)版：([^<>]+)<', resp.text, re.MULTILINE )
@@ -20,7 +28,8 @@ def savePDF( day, pdfurl, bc ):
 # 目前不支持下载
 #  with open(os.path.join(pdfdir, pdfname), 'wb') as of:
 #    of.write(requests.get(pdfurl).content)
-  return
+#  return pdfname
+  return ''
 
 def saveJPG( day, imgurl, bc ):
   imgdir = 'JPG/{:%Y/%Y%m%d}/{}'.format(day, bc)
@@ -29,7 +38,7 @@ def saveJPG( day, imgurl, bc ):
   imgname = imgurl.split('/')[-1].split('?')[0]
   with open(os.path.join(imgdir, imgname), 'wb') as of:
     of.write( requests.get(imgurl).content)
-  return
+  return imgname
 
 if len(sys.argv)==1 :
   day = date.today()
@@ -37,25 +46,33 @@ else:
   groups = re.match( r'(\d{4})(\d{2})(\d{2})', sys.argv[1] ).groups()
   day = date( int(groups[0]), int(groups[1]), int(groups[2]) )
 code = 'hzrb'
-pagelist = getPageList( day, code )
+pagelist = getPageList( day, code ) # 获得版面页面列表
 for i in range(len(pagelist)):
   BC = pagelist[i][2]
   BM = pagelist[i][3]
-  savePDF( day, pagelist[i][0], BC )
+  PD = savePDF( day, pagelist[i][0], BC )
   
+  # page_detail_...
   detail = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, pagelist[i][1] ) )
   detail.encoding = 'utf-8'
   viewpage = re.search( r'src="(page_view[^"]*\.html)"', detail.text ).group(1)
   view = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, viewpage ) )
   view.encoding = 'utf-8'
   imgurl = re.search( r'<img src="([^"]+)".*>', view.text ).group(1)
-  saveJPG( day, imgurl, BC )
-  
-  titlelist = re.findall( r'<area.+coords="(.*)".+href="([^"]+)">', view.text, re.MULTILINE )
+  JP = saveJPG( day, imgurl, BC )
+  # article_list_...
+  articlelistfile = re.search( r'src="(article_list_[^<>"]*\.html)"', detail.text, re.MULTILINE ).group(1)
+  articlelist = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, articlelistfile ) )
+  articlelist.encoding = 'utf-8'
+  titlelist = re.findall( r'<li><a href="([^<>"]+)"[^<>]*>([^<>]+)</a></li>', articlelist.text, re.MULTILINE )
+  print(articlelistfile)
   for title in titlelist:
-    ZB = title[0]
-    article = request.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, title[1] ) )
+#    ZB = title[0] # 还需要处理
+    Url = 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, title[0] )
+    article = requests.get( Url )
     article.encoding = 'utf-8'
-  
-  
+    BT = re.search('<h1>([^<>]*)</h1>', article.text).group(1)
+    print( BT )
+    WH = dictCode[code]['WH']
+
 
