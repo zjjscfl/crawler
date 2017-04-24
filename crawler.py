@@ -40,6 +40,33 @@ def saveJPG( day, imgurl, bc ):
     of.write( requests.get(imgurl).content)
   return imgname
 
+def getZBdict( html ):
+  list = re.findall( r'<area .*?coords="(.*?)" href="(.+?)">', html )
+  dict = {}
+  for item in list:
+    dict[item[1]] = item[0]
+  return dict
+
+def getMatch( text, pattern ):
+  result = re.search(pattern, text, re.MULTILINE|re.DOTALL )
+  if( result ):
+    return result.group(1)
+  else:
+    return ''
+
+def getContent( html ):
+  c1 = getMatch( html, r'<div class="content">(.*?)</div>' )
+  clist = re.findall( r'<p>(.*?)</p>', c1 )
+  content = ''
+  for c2 in clist:
+    content = content + c2 + '\n'
+  return content
+
+def getImages( html ):
+  c1 = getMatch( html, r'<div class="content">(.*?)</div>' )
+  imglist = re.findall( r'<img src="(.*?)"/>', c1 )
+  return imglist
+
 if len(sys.argv)==1 :
   day = date.today()
 else:
@@ -55,24 +82,29 @@ for i in range(len(pagelist)):
   # page_detail_...
   detail = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, pagelist[i][1] ) )
   detail.encoding = 'utf-8'
-  viewpage = re.search( r'src="(page_view[^"]*\.html)"', detail.text ).group(1)
+  viewpage = re.search( r'src="(page_view.*?\.html)"', detail.text ).group(1)
   view = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, viewpage ) )
   view.encoding = 'utf-8'
   imgurl = re.search( r'<img src="([^"]+)".*>', view.text ).group(1)
   JP = saveJPG( day, imgurl, BC )
+  dictZB = getZBdict( view.text ) #获取Url与坐标的映射
   # article_list_...
-  articlelistfile = re.search( r'src="(article_list_[^<>"]*\.html)"', detail.text, re.MULTILINE ).group(1)
+  articlelistfile = getMatch( detail.text, r'src="(article_list_.*?\.html)"' )
   articlelist = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, articlelistfile ) )
   articlelist.encoding = 'utf-8'
-  titlelist = re.findall( r'<li><a href="([^<>"]+)"[^<>]*>([^<>]+)</a></li>', articlelist.text, re.MULTILINE )
+  titlelist = re.findall( r'<li><a href="(.+?)".*?>(.+?)</a></li>', articlelist.text, re.MULTILINE )
+  
   print(articlelistfile)
   for title in titlelist:
-#    ZB = title[0] # 还需要处理
+    ZB = dictZB[title[0]] # 还需要处理
     Url = 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, title[0] )
     article = requests.get( Url )
     article.encoding = 'utf-8'
-    BT = re.search('<h1>([^<>]*)</h1>', article.text).group(1)
-    print( BT )
+    BT = getMatch( article.text, r'<h1>(.*?)</h1>' )
+    FB = getMatch( article.text, r'<h2>(.*?)</h2>' )
+    YT = getMatch( article.text, r'<h3>(.*?)</h3>' )
     WH = dictCode[code]['WH']
-
+    TX = getContent( article.text )
+    images = getImages( article.text )
+    
 
