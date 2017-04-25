@@ -31,8 +31,8 @@ def savePDF( day, pdfurl, bc ):
 #  return pdfname
   return ''
 
-def saveJPG( day, imgurl, bc ):
-  imgdir = 'JPG/{:%Y/%Y%m%d}/{}'.format(day, bc)
+def saveJPG( day, imgurl, bc, prefix ):
+  imgdir = '{:s}/{:%Y/%Y%m%d}/{}'.format(prefix, day, bc)
   if not os.path.exists( imgdir ):
     os.makedirs( imgdir )
   imgname = imgurl.split('/')[-1].split('?')[0]
@@ -67,44 +67,50 @@ def getImages( html ):
   imglist = re.findall( r'<img src="(.*?)"/>', c1 )
   return imglist
 
-if len(sys.argv)==1 :
-  day = date.today()
-else:
-  groups = re.match( r'(\d{4})(\d{2})(\d{2})', sys.argv[1] ).groups()
-  day = date( int(groups[0]), int(groups[1]), int(groups[2]) )
-code = 'hzrb'
-pagelist = getPageList( day, code ) # 获得版面页面列表
-for i in range(len(pagelist)):
-  BC = pagelist[i][2]
-  BM = pagelist[i][3]
-  PD = savePDF( day, pagelist[i][0], BC )
-  
-  # page_detail_...
-  detail = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, pagelist[i][1] ) )
-  detail.encoding = 'utf-8'
-  viewpage = re.search( r'src="(page_view.*?\.html)"', detail.text ).group(1)
-  view = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, viewpage ) )
-  view.encoding = 'utf-8'
-  imgurl = re.search( r'<img src="([^"]+)".*>', view.text ).group(1)
-  JP = saveJPG( day, imgurl, BC )
-  dictZB = getZBdict( view.text ) #获取Url与坐标的映射
-  # article_list_...
-  articlelistfile = getMatch( detail.text, r'src="(article_list_.*?\.html)"' )
-  articlelist = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, articlelistfile ) )
-  articlelist.encoding = 'utf-8'
-  titlelist = re.findall( r'<li><a href="(.+?)".*?>(.+?)</a></li>', articlelist.text, re.MULTILINE )
-  
-  print(articlelistfile)
-  for title in titlelist:
-    ZB = dictZB[title[0]] # 还需要处理
-    Url = 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, title[0] )
-    article = requests.get( Url )
-    article.encoding = 'utf-8'
-    BT = getMatch( article.text, r'<h1>(.*?)</h1>' )
-    FB = getMatch( article.text, r'<h2>(.*?)</h2>' )
-    YT = getMatch( article.text, r'<h3>(.*?)</h3>' )
-    WH = dictCode[code]['WH']
-    TX = getContent( article.text )
-    images = getImages( article.text )
+def main():
+  if len(sys.argv)==1 :
+    day = date.today()
+  else:
+    groups = re.match( r'(\d{4})(\d{2})(\d{2})', sys.argv[1] ).groups()
+    day = date( int(groups[0]), int(groups[1]), int(groups[2]) )
+  code = 'hzrb'
+  pagelist = getPageList( day, code ) # 获得版面页面列表
+  for i in range(len(pagelist)):
+    BC = pagelist[i][2]
+    BM = pagelist[i][3]
+    PD = savePDF( day, pagelist[i][0], BC )
+    
+    # page_detail_...
+    detail = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, pagelist[i][1] ) )
+    detail.encoding = 'utf-8'
+    viewpage = re.search( r'src="(page_view.*?\.html)"', detail.text ).group(1)
+    view = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, viewpage ) )
+    view.encoding = 'utf-8'
+    imgurl = re.search( r'<img src="([^"]+)".*>', view.text ).group(1)
+    JP = saveJPG( day, imgurl, BC, 'JPG' )
+    dictZB = getZBdict( view.text ) #获取Url与坐标的映射
+    # article_list_...
+    articlelistfile = getMatch( detail.text, r'src="(article_list_.*?\.html)"' )
+    articlelist = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, articlelistfile ) )
+    articlelist.encoding = 'utf-8'
+    titlelist = re.findall( r'<li><a href="(.+?)".*?>(.+?)</a></li>', articlelist.text, re.MULTILINE )
+    
+    print(articlelistfile)
+    for title in titlelist:
+      ZB = dictZB[title[0]] # 还需要处理
+      Url = 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, title[0] )
+      article = requests.get( Url )
+      article.encoding = 'utf-8'
+      BT = getMatch( article.text, r'<h1>(.*?)</h1>' )
+      FB = getMatch( article.text, r'<h2>(.*?)</h2>' )
+      YT = getMatch( article.text, r'<h3>(.*?)</h3>' )
+      WH = dictCode[code]['WH']
+      TX = getContent( article.text )
+      images = getImages( article.text )
+      for image in images:
+        print(image)
+        saveJPG( day, image, BC, 'xml' )
+
+main()
     
 
