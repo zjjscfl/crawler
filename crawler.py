@@ -13,6 +13,16 @@ dictCode = {
     'name': '杭州日报',
     'pattern': 'http://hzdaily.hangzhou.com.cn/hzrb/{:%Y/%m/%d/page_list_%Y%m%d}.html',
     'WH' : '644*1024'
+  },
+   'dskb': {
+    'name': '都市快报',
+    'pattern': 'http://hzdaily.hangzhou.com.cn/dskb/{:%Y/%m/%d/page_list_%Y%m%d}.html',
+    'WH' : '644*1024'
+  },
+   'mrsb': {
+    'name': '每日商报',
+    'pattern': 'http://hzdaily.hangzhou.com.cn/mrsb/{:%Y/%m/%d/page_list_%Y%m%d}.html',
+    'WH' : '644*1024'
   }
 }
 
@@ -22,8 +32,8 @@ def getPageList( day, code ):
   resp.encoding = 'utf-8'
   return re.findall( r'href="(http[^"]+\.pdf)".+href="([^"]+\.html)".+>第([^<>]+)版：([^<>]+)<', resp.text, re.MULTILINE )
 
-def savePDF( day, pdfurl, bc ):
-  pdfdir = 'PDF/{:%Y/%Y%m%d}/{}'.format(day, bc)
+def savePDF(code, day, pdfurl, bc ):
+  pdfdir = '{}/PDF/{:%Y/%Y%m%d}/{}'.format(code,day, bc)
   if not os.path.exists( pdfdir ):
     os.makedirs( pdfdir )
   pdfname = pdfurl.split('/')[-1]
@@ -33,8 +43,8 @@ def savePDF( day, pdfurl, bc ):
 #  return pdfname
   return ''
 
-def saveJPG( day, imgurl, bc, prefix ):
-  imgdir = '{}/{:%Y/%Y%m%d}/{}'.format(prefix, day, bc)
+def saveJPG(code, day, imgurl, bc, prefix ):
+  imgdir = '{}/{}/{:%Y/%Y%m%d}/{}'.format(code,prefix, day, bc)
   if not os.path.exists( imgdir ):
     os.makedirs( imgdir )
   imgname = imgurl.split('/')[-1].split('?')[0]
@@ -43,7 +53,7 @@ def saveJPG( day, imgurl, bc, prefix ):
   return imgname
 
 def saveXML( code, day, bc, et ):
-  xmldir = 'xml/{:%Y/%Y%m%d}/{}'.format(day,bc)
+  xmldir = '{}/xml/{:%Y/%Y%m%d}/{}'.format(code,day,bc)
   if not os.path.exists( xmldir ):
     os.makedirs( xmldir )
   xmlname = '{}{:%Y%m%d}{}v01h.xml'.format( code.upper(), day, bc )
@@ -56,6 +66,19 @@ def getZBdict( html ):
   for item in list:
     dict[item[1]] = item[0]
   return dict
+
+def getZB(dictZB, WH):
+     ZB =''
+     listZB=  dictZB.split(',',-1)
+     listWH=  WH.split('*',-1)
+     w=float(listWH[0])
+     h=float(listWH[1])
+     n=len(listZB)
+     counter = 0
+     while counter < n:
+       ZB=ZB+"<{}%,{}%>".format(round(float(listZB[counter])*100/w,2),round(float(listZB[counter+1])*100/h,2))
+       counter += 2
+     return ZB
 
 def getMatch( text, pattern ):
   result = re.search(pattern, text, re.MULTILINE|re.DOTALL )
@@ -88,7 +111,7 @@ def dealBC( code, day, bc, bm, pageurl ):
   QS = ET.SubElement( DescriptionMetaGroup, 'QS' )
   item = ET.SubElement( Dayinfo, "item" )
 
-  pdfname = savePDF( day, pageurl, bc )
+  pdfname = savePDF( code,day, pageurl, bc )
   # page_detail_...
   detail = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, pageurl ) )
   detail.encoding = 'utf-8'
@@ -96,7 +119,7 @@ def dealBC( code, day, bc, bm, pageurl ):
   view = requests.get( 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, viewpage ) )
   view.encoding = 'utf-8'
   imgurl = re.search( r'<img src="([^"]+)".*>', view.text ).group(1)
-  jpgname = saveJPG( day, imgurl, bc, 'JPG' )
+  jpgname = saveJPG(code, day, imgurl, bc, 'JPG' )
   dictZB = getZBdict( view.text ) #获取Url与坐标的映射
   # article_list_...
   articlelistfile = getMatch( detail.text, r'src="(article_list_.*?\.html)"' )
@@ -115,7 +138,7 @@ def dealBC( code, day, bc, bm, pageurl ):
     BM = ET.SubElement( MetaInfo, "BM" )
     BM.text = bm
     ZB = ET.SubElement( MetaInfo, "ZB" )
-    ZB.text = dictZB[title[0]] # 还需要处理
+  #  ZB.text = dictZB[title[0]] # 还需要处理
     Url = ET.SubElement( MetaInfo, "Url" )
     Url.text = 'http://hzdaily.hangzhou.com.cn/{}/{:%Y/%m/%d}/{}'.format( code, day, title[0] )
     article = requests.get( Url.text )
@@ -145,20 +168,22 @@ def dealBC( code, day, bc, bm, pageurl ):
     WJLX = ET.SubElement( MetaInfo, "WJLX" )
     QYR = ET.SubElement( MetaInfo, "QYR" )
     GG = ET.SubElement( MetaInfo, "GG" )
-    BJLX = ET.SubElement( MetaInfo, "BJLX" )
+    GGLX = ET.SubElement( MetaInfo, "GGLX" )
     TP = ET.SubElement( MetaInfo, "TP" )
     TPinfo = ET.SubElement( MetaInfo, "TPinfo" )
     Source = ET.SubElement( TPinfo, "Source" )
+    Target= ET.SubElement( TPinfo, "Target" )
     JP = ET.SubElement( Source, "JP" )
     JP.text = jpgname
     PD = ET.SubElement( Source, "PD" )
     PD.text = pdfname
     WH = ET.SubElement( Source, "WH" )
+    ZB.text = getZB(dictZB[title[0]],dictCode[code]['WH'])
     WH.text = dictCode[code]['WH']
     Imageinfo = ET.SubElement( MetaInfo, "Imageinfo" )
     images = getImages( article.text )
     for image in images:
-      name = saveJPG( day, image, bc, 'xml' )
+      name = saveJPG(code, day, image, bc, 'xml' )
       Contnet = ET.SubElement( Imageinfo, "Contnet")  # 拼写有错？？？
       CT = ET.SubElement( Contnet, "CT" )
       CT.text = name
@@ -172,13 +197,17 @@ def main():
   else:
     groups = re.match( r'(\d{4})(\d{2})(\d{2})', sys.argv[1] ).groups()
     day = date( int(groups[0]), int(groups[1]), int(groups[2]) )
-  code = 'hzrb'
 
-  pagelist = getPageList( day, code ) # 获得版面页面列表
-  for i in range(len(pagelist)):
-    BC = pagelist[i][2]
-    BM = pagelist[i][3]
-    dealBC( code, day, BC, BM, pagelist[i][1] )
+  #code = 'hzrb'
+  newspaper = ['hzrb','dskb','mrsb'] 
+  for code in newspaper:
+   pagelist = getPageList( day, code ) # 获得版面页面列表
+   for i in range(len(pagelist)):
+     BC = pagelist[i][2]
+     BM = pagelist[i][3]
+     dealBC( code, day, BC, BM, pagelist[i][1] )
+
+
 
 
 main()
