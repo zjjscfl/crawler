@@ -86,7 +86,7 @@ def getZB(dictZB, WH):
 def getMatch( text, pattern ):
   result = re.search(pattern, text, re.MULTILINE|re.DOTALL )
   if( result ):
-    return result.group(0)
+    return result.group(1)
   else:
     return ''
 
