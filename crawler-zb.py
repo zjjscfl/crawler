@@ -83,20 +83,20 @@ def getZBdict(html):
 
 
 def getZB(dictZB, WH):
-<<<<<<< HEAD
-    ZB = ''
-    listZB = dictZB.split(',', -1)
-    listWH = WH.split('*', -1)
-    w = float(listWH[0])
-    h = float(listWH[1])
-    n = len(listZB)
-    counter = 0
-    while counter < n:
-        ZB = ZB + "<{}%,{}%>".format(round(float(listZB[counter]) * 100 / w, 2),
-                                     round(float(listZB[counter + 1]) * 100 / h, 2))
-        counter += 2
-    return ZB
-=======
+
+    # ZB = ''
+    # listZB = dictZB.split(',', -1)
+    # listWH = WH.split('*', -1)
+    # w = float(listWH[0])
+    # h = float(listWH[1])
+    # n = len(listZB)
+    # counter = 0
+    # while counter < n:
+    #     ZB = ZB + "<{}%,{}%>".format(round(float(listZB[counter]) * 100 / w, 2),
+    #                                  round(float(listZB[counter + 1]) * 100 / h, 2))
+    #     counter += 2
+    # return ZB
+
      ZB =''
      listZB=  dictZB.split(',',-1)
      listWH=  WH.split('*',-1)
@@ -122,7 +122,7 @@ def getContent( html ):
   if( result ):
     c1=result.group(1)
     clist = re.findall( r'<P>([\s\S]*?)</P>', c1 )
-  
+
     for c2 in clist:
       content = content + c2 + '\n'
   return content
@@ -136,7 +136,7 @@ def getImages( html ):
   #   return imglist
   # else:
   #   return ''
->>>>>>> a70a4ea41a8ea3398f51e2fbf612a9245f7991cd
+
 
 
 def getMatch(text, pattern):
@@ -292,7 +292,7 @@ def main():
                 BC = pagelist[i][1].replace('\n', '').replace('\r', '')
                 BM = pagelist[i][2]
                 dealBC(code, day, BC, BM, pagelist[i][0].replace('./', ''), pagetext, pageimage[i])
-                # time.sleep(1)
+                time.sleep(1)
                 if i == (pagelist_len - 1):
                     f = open('log.txt', 'a')
                     f.write(code + str(day) + '\n')
