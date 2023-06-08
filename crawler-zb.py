@@ -83,6 +83,7 @@ def getZBdict(html):
 
 
 def getZB(dictZB, WH):
+<<<<<<< HEAD
     ZB = ''
     listZB = dictZB.split(',', -1)
     listWH = WH.split('*', -1)
@@ -95,6 +96,47 @@ def getZB(dictZB, WH):
                                      round(float(listZB[counter + 1]) * 100 / h, 2))
         counter += 2
     return ZB
+=======
+     ZB =''
+     listZB=  dictZB.split(',',-1)
+     listWH=  WH.split('*',-1)
+     w=float(listWH[0])
+     h=float(listWH[1])
+     n=len(listZB)
+     counter = 0
+     while counter < n:
+       ZB=ZB+"<{}%,{}%>".format(round(float(listZB[counter])*100/w,2),round(float(listZB[counter+1])*100/h,2))
+       counter += 2
+     return ZB
+
+def getMatch( text, pattern ):
+  result = re.search(pattern, text, re.MULTILINE|re.DOTALL )
+  if( result ):
+    return result.group(1)
+  else:
+    return ''
+
+def getContent( html ):
+  content = ''
+  result = re.search(r'<founder-content>([\s\S]+?)</founder-content>', html, re.MULTILINE|re.DOTALL )
+  if( result ):
+    c1=result.group(1)
+    clist = re.findall( r'<P>([\s\S]*?)</P>', c1 )
+  
+    for c2 in clist:
+      content = content + c2 + '\n'
+  return content
+
+def getImages( html ):
+  return re.findall( r'<IMG src="(.*?)">', html)
+  # result = re.search(r'<div class="main_ar_pic_text">([\s\S]+?)</div>', html, re.MULTILINE|re.DOTALL )
+  # if( result ):
+  #   c1=result.group(1)
+  #   imglist =re.findall( r'<IMG src="(.*?)">', c1 )
+  #   return imglist
+  # else:
+  #   return ''
+>>>>>>> a70a4ea41a8ea3398f51e2fbf612a9245f7991cd
 
 
 def getMatch(text, pattern):
