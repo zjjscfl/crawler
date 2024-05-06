@@ -282,7 +282,7 @@ def main():
                 elif line == (code + str(day)):
                     log_mark = True
             f.close()
-# 查询是否需要运行
+# 查询是否需要运行，测试分支
         if not log_mark:
             pagetext = getPage(day, code, dictCode[code]['pageurl'])  # 获得版面页面
             pagelist = re.findall(r'href=(.+\.htm).*>([^<>]+)版：([^<>]+)<', pagetext, re.MULTILINE)
